@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q&A Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-container">
+                <div class="logo">Community Feed</div>
+                <div class="user-profile" id="user-profile-container">
+                    <!-- Profile will be rendered by JavaScript -->
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="main-layout">
+            <!-- Sidebar Left (Filters/Nav) -->
+            <aside class="sidebar-left">
+                <button id="ask-question-btn" class="btn-primary">Ask a Question</button>
+                <div class="filters">
+                    <h3>Feeds</h3>
+                    <ul>
+                        <li><a href="#" class="active" data-filter="all">All Questions</a></li>
+                        <li><a href="#" data-filter="my-questions">My Questions</a></li>
+                        <li><a href="#" data-filter="my-answers">My Answers</a></li>
+                        <li><a href="#" data-filter="bookmarks">Bookmarks</a></li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Feed Content -->
+            <section class="feed-container">
+                <!-- Search Section -->
+                <div class="search-container">
+                    <div class="search-box">
+                        <select id="search-scope">
+                            <option value="content">Title + Body</option>
+                            <option value="tag">Tag</option>
+                        </select>
+                        <input type="text" id="search-input" placeholder="Search...">
+                        <button id="search-btn">Search</button>
+                    </div>
+                </div>
+
+                <div class="feed-header">
+                    <h2>Latest Questions</h2>
+                    <div class="sort-options">
+                        <select id="sort-select">
+                            <option value="latest">Latest Activity</option>
+                            <option value="newest">Newest</option>
+                            <option value="votes">Most Votes</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="feed-list" class="feed-list">
+                    <!-- Feed Items will be injected here -->
+                </div>
+
+                <!-- Question Detail View (Hidden by default) -->
+                <div id="question-detail" class="question-detail hidden">
+                    <h2>Ask a Question</h2>
+                    <form id="question-form">
+                        <div class="form-group">
+                            <label for="q-title">Title</label>
+                            <input type="text" id="q-title" placeholder="What's your question?" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="q-body">Details</label>
+                            <textarea id="q-body" rows="5" placeholder="Provide more details..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="q-tags">Role (Optional)</label>
+                            <select id="q-tags">
+                                <option value="" disabled selected>Select a role...</option>
+                                <option value="Administrator">Administrator</option>
+                                <option value="Architect">Architect</option>
+                                <option value="Business Analyst">Business Analyst</option>
+                                <option value="Consultant">Consultant</option>
+                                <option value="Customer Service Professional">Customer Service Professional</option>
+                                <option value="Data Analyst">Data Analyst</option>
+                                <option value="Developer">Developer</option>
+                                <option value="Marketer">Marketer</option>
+                                <option value="Not Applicable">Not Applicable</option>
+
+                                <option value="Sales Professional">Sales Professional</option>
+                                <option value="UX Designer">UX Designer</option>
+                            </select>
+                            <div id="selected-roles-container" class="selected-roles-container"></div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-secondary close-modal-btn">Cancel</button>
+                            <button type="submit" class="btn-primary">Post Question</button>
+                        </div>
+                    </form>
+                </div>
+    </div>
+
+    <!-- Answer Edit Modal -->
+    <div id="answer-edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal close-answer-edit">&times;</span>
+            <h2>Edit Answer</h2>
+            <form id="answer-edit-form">
+                <div class="form-group">
+                    <label for="edit-answer-body">Details</label>
+                    <textarea id="edit-answer-body" rows="5" required></textarea>
+                </div>
+                <div class="file-attachment-ui">
+                    <span>File Attachment (JPG, PNG)</span>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary close-answer-edit-btn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="confirm-modal hidden">
+        <div class="confirm-modal-content">
+            <h3 class="confirm-modal-title">Delete Question</h3>
+            <p class="confirm-modal-message">Are you sure you want to delete this question? This action cannot be
+                undone.</p>
+            <div class="confirm-modal-actions">
+                <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+                <button class="btn-delete" id="confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

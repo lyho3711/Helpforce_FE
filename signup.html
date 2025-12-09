@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - Community Feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1 class="auth-logo">Community Feed</h1>
+                <p class="auth-subtitle">새로운 계정을 만들어보세요</p>
+            </div>
+
+            <form id="signup-form" class="auth-form">
+                <div class="form-group">
+                    <label for="email">이메일 *</label>
+                    <input type="email" id="email" name="email" placeholder="이메일을 입력하세요" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">비밀번호 *</label>
+                    <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" required>
+                    <div class="password-requirements">
+                        <div class="requirement" id="req-length">
+                            <span class="req-icon">○</span>
+                            <span class="req-text">8자 이상 32자 이하</span>
+                        </div>
+                        <div class="requirement" id="req-types">
+                            <span class="req-icon">○</span>
+                            <span class="req-text">영문/숫자/특수문자 중 2가지 이상 포함</span>
+                        </div>
+                        <div class="requirement" id="req-consecutive">
+                            <span class="req-icon">○</span>
+                            <span class="req-text">연속 3자 이상 동일한 문자/숫자 제외</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password-confirm">비밀번호 확인 *</label>
+                    <input type="password" id="password-confirm" name="password-confirm" placeholder="비밀번호를 다시 입력하세요"
+                        required>
+                    <div class="validation-message" id="password-match-message"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="crm-cohort">CRM 기수 *</label>
+                    <input type="text" id="crm-cohort" name="crm-cohort" placeholder="예: 1기, 2기" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="affiliation">소속명 (회사/학교/기관 등)</label>
+                    <input type="text" id="affiliation" name="affiliation" placeholder="소속명을 입력하세요 (선택사항)">
+                </div>
+
+                <button type="submit" class="btn-primary btn-full">가입하기</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>이미 계정이 있으신가요? <a href="login.html" class="auth-link">로그인</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+</body>
+
+</html>
