@@ -242,9 +242,13 @@ function getFilteredAndSortedQuestions() {
                 q.title.toLowerCase().includes(query) ||
                 q.body.toLowerCase().includes(query)
             );
-        } else if (searchScope === 'tag') {
+        } else if (searchScope === 'title') {
             filtered = filtered.filter(q =>
-                q.tags && q.tags.some(tag => tag.toLowerCase().includes(query))
+                q.title.toLowerCase().includes(query)
+            );
+        } else if (searchScope === 'body') {
+            filtered = filtered.filter(q =>
+                q.body.toLowerCase().includes(query)
             );
         }
     }
