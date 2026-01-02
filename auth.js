@@ -47,7 +47,10 @@ if (document.getElementById('signup-form')) {
     // Initial state: disable signup button
     signupBtn.disabled = true;
 
-    // Verify code logic
+    // Store verified auth code
+    let verifiedAuthCode = null;
+
+    // Verify code logic (still client-side check for UX, backend will verify again)
     verifyCodeBtn.addEventListener('click', () => {
         const code = authCodeInput.value;
         if (code === 'CRM101') {
@@ -57,6 +60,7 @@ if (document.getElementById('signup-form')) {
             authCodeInput.disabled = true;
             verifyCodeBtn.disabled = true;
             verifyCodeBtn.innerText = '인증완료';
+            verifiedAuthCode = code;
         } else {
             authCodeMessage.textContent = '인증 코드가 올바르지 않습니다';
             authCodeMessage.className = 'validation-message error';
@@ -142,13 +146,14 @@ if (document.getElementById('signup-form')) {
         }
     }
 
-    // Form submission
-    signupForm.addEventListener('submit', (e) => {
+    // Form submission - Now uses API
+    signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const email = emailInput.value;
         const password = passwordInput.value;
         const passwordConfirm = passwordConfirmInput.value;
+        const nickname = document.getElementById('nickname').value;
         const crmCohort = crmCohortInput.value;
         const affiliation = document.getElementById('affiliation').value;
 
@@ -169,25 +174,46 @@ if (document.getElementById('signup-form')) {
             return;
         }
 
-        // Store user data (in real app, this would be sent to server)
-        const userData = {
-            email,
-            nickname: document.getElementById('nickname').value,
-            password, // In real app, never store plain password
-            crmCohort,
-            affiliation,
-            createdAt: new Date().toISOString()
-        };
+        // Disable button during request
+        signupBtn.disabled = true;
+        signupBtn.textContent = '가입 중...';
 
-        // Save to localStorage for demo purposes
-        localStorage.setItem('userData', JSON.stringify(userData));
-        localStorage.setItem('isLoggedIn', 'true');
+        try {
+            const result = await API.auth.signup({
+                email: email,
+                password: password,
+                nickname: nickname,
+                crm_generation: crmCohort,
+                department: affiliation || '',
+                auth_code: verifiedAuthCode || authCodeInput.value
+            });
 
-        // Success feedback
-        alert('회원가입이 완료되었습니다!');
+            if (result.error) {
+                // Handle specific error cases
+                if (result.status === 400) {
+                    alert(result.message || '잘못된 요청입니다.');
+                } else if (result.status === 401) {
+                    alert(result.message || '인증코드가 틀렸습니다.');
+                } else if (result.status === 409) {
+                    alert(result.message || '이미 사용 중인 이메일 또는 닉네임입니다.');
+                } else {
+                    alert(result.message || '회원가입에 실패했습니다.');
+                }
+                signupBtn.disabled = false;
+                signupBtn.textContent = '가입하기';
+                return;
+            }
 
-        // Redirect to main page
-        window.location.href = 'index.html';
+            // Success
+            alert('회원가입이 완료되었습니다!');
+            window.location.href = 'login.html';
+
+        } catch (error) {
+            console.error('Signup error:', error);
+            alert('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            signupBtn.disabled = false;
+            signupBtn.textContent = '가입하기';
+        }
     });
 }
 
@@ -196,33 +222,61 @@ if (document.getElementById('login-form')) {
     const loginForm = document.getElementById('login-form');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
+    const loginBtn = loginForm.querySelector('button[type="submit"]');
 
-    loginForm.addEventListener('submit', (e) => {
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const email = emailInput.value;
         const password = passwordInput.value;
 
-        // Get stored user data
-        const storedUserData = localStorage.getItem('userData');
-
-        if (!storedUserData) {
-            alert('등록된 계정이 없습니다. 회원가입을 먼저 진행해주세요.');
+        if (!email || !password) {
+            alert('이메일과 비밀번호를 입력해주세요.');
             return;
         }
 
-        const userData = JSON.parse(storedUserData);
+        // Disable button during request
+        loginBtn.disabled = true;
+        loginBtn.textContent = '로그인 중...';
 
-        // Validate credentials
-        if (email === userData.email && password === userData.password) {
+        try {
+            const result = await API.auth.login({ email, password });
+
+            if (result.error) {
+                if (result.status === 400) {
+                    alert(result.message || '이메일과 비밀번호를 입력해주세요.');
+                } else if (result.status === 401) {
+                    alert(result.message || '이메일 또는 비밀번호가 일치하지 않습니다.');
+                } else if (result.status === 403) {
+                    alert(result.message || '탈퇴한 회원입니다.');
+                } else {
+                    alert(result.message || '로그인에 실패했습니다.');
+                }
+                passwordInput.classList.add('shake');
+                setTimeout(() => passwordInput.classList.remove('shake'), 300);
+                passwordInput.value = '';
+                loginBtn.disabled = false;
+                loginBtn.textContent = '로그인';
+                return;
+            }
+
+            // Store token and user data
+            if (result.token) {
+                API.setAuthToken(result.token);
+            }
+            if (result.user) {
+                localStorage.setItem('userData', JSON.stringify(result.user));
+            }
             localStorage.setItem('isLoggedIn', 'true');
-            alert('로그인 성공!');
+
+            // Redirect to main page
             window.location.href = 'index.html';
-        } else {
-            alert('이메일 또는 비밀번호가 올바르지 않습니다.');
-            passwordInput.classList.add('shake');
-            setTimeout(() => passwordInput.classList.remove('shake'), 300);
-            passwordInput.value = '';
+
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '로그인';
         }
     });
 }

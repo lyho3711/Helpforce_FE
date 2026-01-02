@@ -1,159 +1,45 @@
-// Mock Data
-const currentUser = {
-    id: 1,
-    nickname: "TrailblazerUser",
-    crmCohort: "1기",
-    avatar: "https://ui-avatars.com/api/?name=1기&background=00A1E0&color=fff&length=2"
-};
+// =====================================================
+// STATE MANAGEMENT
+// =====================================================
+let currentUser = null;
+let questions = [];
+let allAnswers = [];
+let tagsData = [];
+let leaderboardData = [];
 
-const users = [
-    currentUser,
-    { id: 2, nickname: "ApexGuru", crmCohort: "2기", avatar: "https://ui-avatars.com/api/?name=2기&background=random&length=2" },
-    { id: 3, nickname: "LWC_Dev", crmCohort: "3기", avatar: "https://ui-avatars.com/api/?name=3기&background=random&length=2" },
-    { id: 4, nickname: "Abhishek R", crmCohort: "4기", avatar: "https://ui-avatars.com/api/?name=4기&background=random&length=2" },
-    { id: 5, nickname: "Vishal Verma", crmCohort: "5기", avatar: "https://ui-avatars.com/api/?name=5기&background=random&length=2" }
-];
+// Pagination State
+let currentPage = 1;
+const itemsPerPage = 10;
+let totalPages = 1;
+let totalItems = 0;
 
-// Sync current user data from storage if available
-function syncCurrentUserWithStorage() {
-    const storedUserDataStr = localStorage.getItem('userData');
-    if (storedUserDataStr) {
-        const userData = JSON.parse(storedUserDataStr);
-        if (userData.nickname) currentUser.nickname = userData.nickname;
-        if (userData.crmCohort) currentUser.crmCohort = userData.crmCohort;
-        // Update avatar based on cohort
-        currentUser.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.crmCohort)}&background=00A1E0&color=fff&length=2`;
-    }
-}
-syncCurrentUserWithStorage();
+// Filter State
+let currentFilter = 'all';
+let currentSort = 'latest';
+let currentTagFilter = null;
+let searchQuery = '';
+let searchScope = 'content';
 
-// Global Answers Data
-let allAnswers = [
-    {
-        id: 201,
-        question_id: 101,
-        user_id: 2,
-        body: "This is a great question! I think you should try using pagination with OFFSET in SOQL.",
-        is_accepted: false,
-        likes: 5,
-        likedByMe: false,
-        created_at: new Date(Date.now() - 3600000).toISOString()
-    },
-    {
-        id: 202,
-        question_id: 101,
-        user_id: 3,
-        body: "Actually, for LWC datatables, infinite loading is better supported. Check the documentation.",
-        is_accepted: true,
-        likes: 12,
-        likedByMe: false,
-        created_at: new Date(Date.now() - 1800000).toISOString()
-    },
-    {
-        id: 203,
-        question_id: 102,
-        user_id: 1, // currentUser
-        body: "Trigger.new is a list of the new versions of the sObject records. Trigger.oldMap is a map of IDs to the old versions of the sObject records.",
-        is_accepted: true,
-        likes: 8,
-        likedByMe: false,
-        created_at: new Date(Date.now() - 3600000 * 4).toISOString()
-    }
-];
+// Edit State
+let editingQuestionId = null;
+let questionToDelete = null;
+let editingAnswerId = null;
+let answerToDelete = null;
+let selectedRoles = [];
 
-// Initial Mock Questions
-let questions = [
-    {
-        id: 101,
-        user_id: 1, // Changed to currentUser for testing
-        title: "How to handle large data volumes in LWC?",
-        body: "I'm facing performance issues when rendering a datatable with over 5000 records. What are the best practices for pagination or infinite scrolling in Lightning Web Components?",
-        status: "Open",
-        views: 120,
-        votes: 5,
-        answer_count: 2,
-        created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-        tags: ["Developer"],
-        favorited: false
-    },
-    {
-        id: 102,
-        user_id: 3,
-        title: "Apex Trigger context variables explanation",
-        body: "Can someone explain the difference between Trigger.new and Trigger.oldMap? I'm getting null pointer exceptions when trying to access fields in a before insert trigger.",
-        status: "Open",
-        views: 85,
-        votes: 2,
-        answer_count: 1,
-        created_at: new Date(Date.now() - 3600000 * 5).toISOString(),
-        tags: ["Developer"],
-        favorited: true
-    },
-    {
-        id: 103,
-        user_id: 1,
-        title: "Salesforce Flow vs Apex for complex logic",
-        body: "At what point should I switch from Flow to Apex? I have a complex approval process that involves multiple related objects.",
-        status: "Open",
-        views: 200,
-        votes: 10,
-        answer_count: 5,
-        created_at: new Date(Date.now() - 3600000 * 24).toISOString(),
-        tags: ["Architect"],
-        favorited: false
-    },
-    {
-        id: 104,
-        user_id: 2,
-        title: "Best practices for Data Loader?",
-        body: "I need to import 50k records. What are the recommended batch sizes and settings?",
-        status: "Open",
-        views: 45,
-        votes: 1,
-        answer_count: 0,
-        created_at: new Date(Date.now() - 3600000 * 48).toISOString(),
-        tags: ["Data Analyst"],
-        favorited: false
-    }
-];
+// Image State
+let currentQuestionImage = null;
+let currentAnswerImage = null;
+let currentQuestionFiles = [];
 
-// Generate more mock questions for pagination testing
-for (let i = 1; i <= 30; i++) {
-    questions.push({
-        id: 104 + i,
-        user_id: (i % 3) + 1,
-        title: `Mock Question ${i} for Pagination Testing`,
-        body: `This is a generated question to test the pagination functionality. Question number ${i}.`,
-        status: "Open",
-        views: Math.floor(Math.random() * 100),
-        votes: Math.floor(Math.random() * 10),
-        answer_count: 0,
-        created_at: new Date(Date.now() - 3600000 * (48 + i)).toISOString(),
-        tags: ["General"],
-        favorited: false
-    });
-}
-
-const leaderboardData = [
-    { id: 1, name: "Anirban Sen", points: 4300, rank: 1, avatar: "https://ui-avatars.com/api/?name=Anirban+Sen&background=random" },
-    { id: 2, name: "Juan Cruz Basso", points: 610, rank: 2, avatar: "https://ui-avatars.com/api/?name=Juan+Cruz&background=random" },
-    { id: 3, name: "Keiji Otsubo", points: 530, rank: 3, avatar: "https://ui-avatars.com/api/?name=Keiji+Otsubo&background=random" },
-    { id: 4, name: "Abhishek R", points: 497, rank: 4, avatar: "https://ui-avatars.com/api/?name=Abhishek+R&background=random" },
-    { id: 5, name: "Vishal Verma", points: 379, rank: 5, avatar: "https://ui-avatars.com/api/?name=Vishal+Verma&background=random" }
-];
-
-const rolesList = [
-    "Administrator", "Architect", "Business Analyst", "Consultant",
-    "Customer Service Professional", "Data Analyst", "Developer",
-    "Marketer", "Not Applicable", "Sales Professional", "UX Designer"
-];
-
-// DOM Elements
+// =====================================================
+// DOM ELEMENTS
+// =====================================================
 const feedListEl = document.getElementById('feed-list');
 const feedHeaderEl = document.querySelector('.feed-header');
-const searchContainerEl = document.querySelector('.search-container'); // Add search container selection
-const sidebarRightEl = document.querySelector('.sidebar-right'); // Add right sidebar selection
-const mainLayoutEl = document.querySelector('.main-layout'); // Add main layout selection
+const searchContainerEl = document.querySelector('.search-container');
+const sidebarRightEl = document.querySelector('.sidebar-right');
+const mainLayoutEl = document.querySelector('.main-layout');
 const questionDetailEl = document.getElementById('question-detail');
 const detailContentEl = document.getElementById('detail-content');
 const backToFeedBtn = document.getElementById('back-to-feed');
@@ -176,42 +62,11 @@ const answerEditModal = document.getElementById('answer-edit-modal');
 const closeAnswerEditBtn = document.querySelector('.close-answer-edit');
 const cancelAnswerEditBtn = document.querySelector('.close-answer-edit-btn');
 const answerEditForm = document.getElementById('answer-edit-form');
+const userProfileContainer = document.getElementById('user-profile-container');
 
-// State
-let currentFilter = 'all';
-let currentSort = 'latest';
-let currentTagFilter = null;
-let editingQuestionId = null;
-let questionToDelete = null;
-let editingAnswerId = null;
-let answerToDelete = null;
-let currentPage = 1;
-const itemsPerPage = 10;
-let selectedRoles = [];
-let searchQuery = '';
-let searchScope = 'content';
-let currentQuestionImage = null; // Store base64 image for new question
-let currentAnswerImage = null; // Store base64 image for new answer
-
-// Helper Functions
-function getUser(id) {
-    return users.find(u => u.id === id) || users[0];
-}
-
-function getAcceptButtonHtml(isQuestionAuthor, answer, question) {
-    if (!isQuestionAuthor) return '';
-
-    if (answer.is_accepted) {
-        return `<button class="accept-btn unaccept-btn" onclick="acceptAnswer(${answer.id})">✓ 채택 취소</button>`;
-    }
-
-    if (!question.has_accepted_answer) {
-        return `<button class="accept-btn" onclick="acceptAnswer(${answer.id})">✓ 채택하기</button>`;
-    }
-
-    return '';
-}
-
+// =====================================================
+// HELPER FUNCTIONS
+// =====================================================
 function timeAgo(dateString) {
     const date = new Date(dateString);
     const now = new Date();
@@ -230,93 +85,191 @@ function timeAgo(dateString) {
     return Math.floor(seconds) + " seconds ago";
 }
 
-// Core Logic
-function getFilteredAndSortedQuestions() {
-    let filtered = [...questions];
-
-    // Search Filter
-    if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (searchScope === 'content') {
-            filtered = filtered.filter(q =>
-                q.title.toLowerCase().includes(query) ||
-                q.body.toLowerCase().includes(query)
-            );
-        } else if (searchScope === 'title') {
-            filtered = filtered.filter(q =>
-                q.title.toLowerCase().includes(query)
-            );
-        } else if (searchScope === 'body') {
-            filtered = filtered.filter(q =>
-                q.body.toLowerCase().includes(query)
-            );
-        }
-    }
-
-    if (currentTagFilter) {
-        filtered = filtered.filter(q => q.tags && q.tags.includes(currentTagFilter));
-    }
-
-    if (currentFilter === 'my-questions') {
-        filtered = filtered.filter(q => q.user_id === currentUser.id);
-    } else if (currentFilter === 'my-answers') {
-        const answeredQuestionIds = allAnswers
-            .filter(a => a.user_id === currentUser.id)
-            .map(a => a.question_id);
-        filtered = filtered.filter(q => answeredQuestionIds.includes(q.id));
-    } else if (currentFilter === 'bookmarks') {
-        filtered = filtered.filter(q => q.favorited === true);
-    }
-
-    filtered.sort((a, b) => {
-        if (currentSort === 'newest') {
-            return new Date(b.created_at) - new Date(a.created_at);
-        } else if (currentSort === 'votes') {
-            return b.votes - a.votes;
-        } else {
-            return new Date(b.created_at) - new Date(a.created_at);
-        }
-    });
-
-    return filtered;
+function getTagName(tagId) {
+    const tag = tagsData.find(t => t.id === tagId);
+    return tag ? tag.name : `Tag ${tagId}`;
 }
 
-// Render Functions
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.innerHTML = `<span>✓</span> ${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showError(message) {
+    alert(message);
+}
+
+function isLoggedIn() {
+    return !!API.getAuthToken();
+}
+
+// =====================================================
+// API DATA FETCHING
+// =====================================================
+async function fetchCurrentUser() {
+    if (!isLoggedIn()) {
+        currentUser = null;
+        return;
+    }
+    const result = await API.auth.getMe();
+    if (result.error) {
+        if (result.status === 401) {
+            API.removeAuthToken();
+            localStorage.removeItem('userData');
+            currentUser = null;
+        }
+        return;
+    }
+    currentUser = result;
+    localStorage.setItem('userData', JSON.stringify(result));
+}
+
+async function fetchQuestions() {
+    const params = {
+        page: currentPage,
+        size: itemsPerPage,
+        sort: currentSort
+    };
+
+    // Search params
+    if (searchQuery) {
+        params.keyword = searchQuery;
+        if (searchScope === 'content') {
+            params.search_type = 'all';
+        } else if (searchScope === 'title') {
+            params.search_type = 'title';
+        } else if (searchScope === 'body') {
+            params.search_type = 'body';
+        }
+    }
+
+    // Tag filter
+    if (currentTagFilter) {
+        const tag = tagsData.find(t => t.name === currentTagFilter);
+        if (tag) {
+            params.tag_ids = [tag.id];
+        }
+    }
+
+    // Filter type - For my-questions, my-answers, bookmarks we need different endpoints
+    if (currentFilter === 'my-questions') {
+        const result = await API.myPage.getMyQuestions(currentPage, itemsPerPage);
+        if (result.error) {
+            console.error('Failed to fetch my questions:', result);
+            questions = [];
+            return;
+        }
+        questions = result.questions || [];
+        if (result.pagination) {
+            totalPages = result.pagination.total_pages;
+            totalItems = result.pagination.total_items;
+        }
+        return;
+    } else if (currentFilter === 'my-answers') {
+        const result = await API.myPage.getMyAnsweredQuestions(currentPage, itemsPerPage);
+        if (result.error) {
+            console.error('Failed to fetch my answered questions:', result);
+            questions = [];
+            return;
+        }
+        questions = result.questions || [];
+        if (result.pagination) {
+            totalPages = result.pagination.total_pages;
+            totalItems = result.pagination.total_items;
+        }
+        return;
+    } else if (currentFilter === 'bookmarks') {
+        const result = await API.myPage.getMyBookmarks(currentPage, itemsPerPage);
+        if (result.error) {
+            console.error('Failed to fetch bookmarks:', result);
+            questions = [];
+            return;
+        }
+        questions = result.questions || [];
+        if (result.pagination) {
+            totalPages = result.pagination.total_pages;
+            totalItems = result.pagination.total_items;
+        }
+        return;
+    }
+
+    // Default: all questions
+    const result = await API.questions.getList(params);
+    if (result.error) {
+        console.error('Failed to fetch questions:', result);
+        questions = [];
+        return;
+    }
+
+    questions = result.questions || [];
+    if (result.pagination) {
+        totalPages = result.pagination.total_pages;
+        totalItems = result.pagination.total_items;
+    }
+}
+
+async function fetchTags() {
+    const result = await API.tags.getUsageCount();
+    if (result.error) {
+        console.error('Failed to fetch tags:', result);
+        tagsData = [];
+        return;
+    }
+    tagsData = result.tags || [];
+}
+
+async function fetchLeaderboard() {
+    const result = await API.rankings.getTopContributors();
+    if (result.error) {
+        console.error('Failed to fetch leaderboard:', result);
+        leaderboardData = [];
+        return;
+    }
+    leaderboardData = result.rankings || [];
+}
+
+// =====================================================
+// RENDER FUNCTIONS
+// =====================================================
 function renderFeed() {
     feedListEl.innerHTML = '';
-    const allFilteredQuestions = getFilteredAndSortedQuestions();
 
-    if (allFilteredQuestions.length === 0) {
+    if (questions.length === 0) {
         feedListEl.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-secondary);">No questions found.</div>';
         return;
     }
 
-    // Pagination Logic
-    const totalPages = Math.ceil(allFilteredQuestions.length / itemsPerPage);
-    if (currentPage > totalPages) currentPage = 1; // Reset if out of bounds
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const displayQuestions = allFilteredQuestions.slice(startIndex, endIndex);
-
-    displayQuestions.forEach(q => {
-        const user = getUser(q.user_id);
+    questions.forEach(q => {
         const card = document.createElement('div');
         card.className = 'feed-item';
-        const isOwnPost = q.user_id === currentUser.id;
-        const favoriteClass = q.favorited ? 'favorited' : '';
-        const favoriteIcon = q.favorited ? '★' : '☆';
+        const isOwnPost = currentUser && q.user && q.user.id === currentUser.id;
+        const favoriteClass = q.is_bookmarked ? 'favorited' : '';
+        const favoriteIcon = q.is_bookmarked ? '★' : '☆';
 
-        // Calculate total likes from answers for Votes display
-        const qAnswers = allAnswers.filter(a => a.question_id === q.id);
-        const totalAnswerLikes = qAnswers.reduce((sum, a) => sum + a.likes, 0);
+        // Get user info
+        const userName = q.user ? q.user.nickname : '익명';
+        const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=00A1E0&color=fff`;
+
+        // Get tags
+        const tagNames = (q.tag_ids || []).map(id => getTagName(id));
+
+        // Calculate votes (answer_count or from answers if available)
+        const answerCount = q.answer_count || 0;
+        const votes = q.votes || 0;
 
         card.innerHTML = `
             <div class="feed-main-content">
                 <div class="feed-item-header">
                     <div class="user-info">
-                        <img src="${user.avatar}" alt="${user.nickname}" class="avatar-sm">
+                        <img src="${userAvatar}" alt="${userName}" class="avatar-sm">
                         <div>
-                            <div class="user-name">${user.nickname}</div>
+                            <div class="user-name">${userName}</div>
                             <div class="post-meta">${timeAgo(q.created_at)}</div>
                         </div>
                     </div>
@@ -336,26 +289,25 @@ function renderFeed() {
                 <a href="#" class="question-title" onclick="showQuestionDetail(${q.id}); return false;">${q.title}</a>
                 <div class="question-body">
                     ${q.body}
-                    ${q.image ? `<img src="${q.image}" class="uploaded-image" alt="Question Image" onclick="showQuestionDetail(${q.id}); event.stopPropagation();">` : ''}
                 </div>
                 <div class="tags">
-                    ${q.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
-                    ${q.has_accepted_answer || q.status === 'Solved' ? `<span class="solved-badge">✓ Solved</span>` : ''}
+                    ${tagNames.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    ${q.accepted_answer_id || q.status === 'closed' ? `<span class="solved-badge">✓ Solved</span>` : ''}
                 </div>
                 <div class="feed-stats">
-                    <div class="stat-item"><span>👁️</span> ${q.views} Views</div>
-                    <div class="stat-item"><span>💬</span> ${q.answer_count} Answers</div>
-                    <div class="stat-item" style="cursor: default;"><span>👍</span> ${totalAnswerLikes} Votes</div>
+                    <div class="stat-item"><span>👁️</span> ${q.views || 0} Views</div>
+                    <div class="stat-item"><span>💬</span> ${answerCount} Answers</div>
+                    <div class="stat-item" style="cursor: default;"><span>👍</span> ${votes} Votes</div>
                 </div>
             </div>
         `;
         feedListEl.appendChild(card);
     });
 
-    renderPagination(totalPages);
+    renderPagination();
 }
 
-function renderPagination(totalPages) {
+function renderPagination() {
     if (totalPages <= 1) return;
 
     const paginationContainer = document.createElement('div');
@@ -370,8 +322,11 @@ function renderPagination(totalPages) {
         </button>
     `;
 
-    // Page Numbers
-    for (let i = 1; i <= totalPages; i++) {
+    // Page Numbers (show max 5 pages around current)
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+
+    for (let i = startPage; i <= endPage; i++) {
         paginationHtml += `
             <button class="pagination-btn ${currentPage === i ? 'active' : ''}" onclick="changePage(${i})">
                 ${i}
@@ -390,8 +345,9 @@ function renderPagination(totalPages) {
     feedListEl.appendChild(paginationContainer);
 }
 
-function changePage(newPage) {
+async function changePage(newPage) {
     currentPage = newPage;
+    await fetchQuestions();
     renderFeed();
     window.scrollTo(0, 0);
 }
@@ -399,81 +355,56 @@ function changePage(newPage) {
 function renderLeaderboard() {
     if (!leaderboardListEl) return;
 
-    // Calculate total likes for each user
-    const userLikes = {};
-    allAnswers.forEach(a => {
-        if (!userLikes[a.user_id]) userLikes[a.user_id] = 0;
-        userLikes[a.user_id] += a.likes;
-    });
+    if (leaderboardData.length === 0) {
+        leaderboardListEl.innerHTML = '<div style="padding: 1rem; color: #666;">No data available</div>';
+        return;
+    }
 
-    // Map users to leaderboard format
-    const leaderboard = users.map(user => ({
-        id: user.id,
-        name: user.nickname,
-        avatar: user.avatar,
-        points: userLikes[user.id] || 0
-    }));
-
-    // Sort by points (likes) descending
-    leaderboard.sort((a, b) => b.points - a.points);
-
-    // Take top 5
-    const top5 = leaderboard.slice(0, 5);
-
-    leaderboardListEl.innerHTML = top5.map((user, index) => `
-        <div class="leaderboard-item">
-            <div class="lb-user-info">
-                <div class="lb-rank">${index + 1}</div>
-                <img src="${user.avatar}" alt="${user.name}" class="avatar-sm">
-                <div class="lb-details">
-                    <div class="lb-name">${user.name}</div>
-                    <div class="lb-points">${user.points} Likes</div>
+    leaderboardListEl.innerHTML = leaderboardData.map((item, index) => {
+        const user = item.user || {};
+        const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname || 'User')}&background=random`;
+        return `
+            <div class="leaderboard-item">
+                <div class="lb-user-info">
+                    <div class="lb-rank">${item.rank || index + 1}</div>
+                    <img src="${avatar}" alt="${user.nickname}" class="avatar-sm">
+                    <div class="lb-details">
+                        <div class="lb-name">${user.nickname || 'Unknown'}</div>
+                        <div class="lb-points">${item.total_likes || 0} Likes</div>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function renderRecommendedTopics() {
     if (!recommendedTopicsListEl) return;
 
-    const tagCounts = {};
-    questions.forEach(q => {
-        if (q.tags && q.tags.length > 0) {
-            q.tags.forEach(tag => {
-                tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-            });
-        }
-    });
+    if (tagsData.length === 0) {
+        recommendedTopicsListEl.innerHTML = '<div style="padding: 1rem; color: #666;">No tags available</div>';
+        return;
+    }
 
-    // Show ALL roles, sorted by count (desc) then name (asc)
-    const allRoles = rolesList.map(role => {
-        return {
-            name: role,
-            count: tagCounts[role] || 0
-        };
-    }).sort((a, b) => {
-        if (b.count !== a.count) {
-            return b.count - a.count; // Sort by count descending
-        }
-        return a.name.localeCompare(b.name); // Sort by name ascending
-    });
+    // Sort by usage count
+    const sortedTags = [...tagsData].sort((a, b) => (b.usage_count || 0) - (a.usage_count || 0));
 
-    recommendedTopicsListEl.innerHTML = allRoles.map(topic => {
-        const isActive = currentTagFilter === topic.name;
+    recommendedTopicsListEl.innerHTML = sortedTags.map(tag => {
+        const isActive = currentTagFilter === tag.name;
         return `
-        <div class="topic-item ${isActive ? 'active-topic' : ''}" onclick="filterByTag('${topic.name}')" style="cursor: pointer;">
-            <div class="topic-info">
-                <div class="topic-details">
-                    <div class="topic-name">${topic.name}</div>
+            <div class="topic-item ${isActive ? 'active-topic' : ''}" onclick="filterByTag('${tag.name}')" style="cursor: pointer;">
+                <div class="topic-info">
+                    <div class="topic-details">
+                        <div class="topic-name">${tag.name}</div>
+                    </div>
+                    <div class="topic-stats">${tag.usage_count || 0}</div>
                 </div>
-                <div class="topic-stats">${topic.count}</div>
             </div>
-        </div>
-    `}).join('');
+        `;
+    }).join('');
 }
 
-function filterByTag(tagName) {
+async function filterByTag(tagName) {
     if (currentTagFilter === tagName) {
         currentTagFilter = null;
     } else {
@@ -488,44 +419,97 @@ function filterByTag(tagName) {
         currentFilter = 'tag';
     }
 
-    currentPage = 1; // Reset to first page on filter change
+    currentPage = 1;
+    await fetchQuestions();
     renderFeed();
     renderRecommendedTopics();
 }
 
-function showQuestionDetail(id) {
-    const q = questions.find(q => q.id === id);
-    if (!q) return;
+// =====================================================
+// QUESTION DETAIL
+// =====================================================
+async function showQuestionDetail(id) {
+    // Increment view count
+    if (isLoggedIn()) {
+        await API.questions.incrementViews(id);
+    }
 
-    const user = getUser(q.user_id);
-    const isQuestionAuthor = q.user_id === currentUser.id;
+    const result = await API.questions.getDetail(id);
+    if (result.error) {
+        showError(result.message || '질문을 찾을 수 없습니다.');
+        return;
+    }
 
-    let answers = allAnswers.filter(a => a.question_id === id);
-    answers.sort((a, b) => {
-        if (a.is_accepted) return -1;
-        if (b.is_accepted) return 1;
-        return b.likes - a.likes;
-    });
+    const q = result;
+    const user = q.user || { nickname: '익명' };
+    const userAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=00A1E0&color=fff`;
+    const isQuestionAuthor = currentUser && user.id === currentUser.id;
 
-    const totalAnswerLikes = answers.reduce((sum, a) => sum + a.likes, 0);
+    // Get tags
+    const tagNames = (q.tag_ids || []).map(tid => getTagName(tid));
+
+    // Answers from response
+    const answers = q.answers || [];
+
+    // Calculate total votes
+    const totalAnswerLikes = answers.reduce((sum, a) => sum + (a.like_count || 0), 0);
 
     let answersHtml = answers.map(a => {
-        const aUser = getUser(a.user_id);
-        const isOwnAnswer = a.user_id === currentUser.id;
-        const likedClass = a.likedByMe ? 'liked' : '';
+        const aUser = a.user || { nickname: '익명' };
+        const aUserAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(aUser.nickname)}&background=random`;
+        const isOwnAnswer = currentUser && aUser.id === currentUser.id;
+        const likedClass = a.is_liked ? 'liked' : '';
+
+        let acceptButtonHtml = '';
+        if (isQuestionAuthor) {
+            if (a.is_accepted) {
+                acceptButtonHtml = `<button class="accept-btn unaccept-btn" onclick="acceptAnswer(${q.id}, ${a.id})">✓ 채택 취소</button>`;
+            } else if (!q.accepted_answer_id) {
+                acceptButtonHtml = `<button class="accept-btn" onclick="acceptAnswer(${q.id}, ${a.id})">✓ 채택하기</button>`;
+            }
+        }
+
+        // Child answers (replies)
+        let childAnswersHtml = '';
+        if (a.child_answers && a.child_answers.length > 0) {
+            childAnswersHtml = a.child_answers.map(child => {
+                const childUser = child.user || { nickname: '익명' };
+                const childAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(childUser.nickname)}&background=random`;
+                const childLikedClass = child.is_liked ? 'liked' : '';
+                return `
+                    <div class="child-answer" style="margin-left: 2rem; padding: 1rem; border-left: 2px solid #e0e0e0;">
+                        <div class="answer-header">
+                            <div class="user-info">
+                                <img src="${childAvatar}" alt="${childUser.nickname}" class="avatar-sm">
+                                <div>
+                                    <div class="user-name">${childUser.nickname}</div>
+                                    <div class="post-meta">${timeAgo(child.created_at)}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="answer-body">${child.body}</div>
+                        <div class="answer-actions">
+                            <button class="like-btn ${childLikedClass}" onclick="toggleAnswerLike(${child.id})">
+                                <span class="like-icon">👍</span> 좋아요 ${child.like_count || 0}개
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
 
         return `
             <div class="answer-item ${a.is_accepted ? 'accepted-answer' : ''}">
                 <div class="answer-header">
                     <div class="answer-header-top">
                         <div class="user-info">
-                            <img src="${aUser.avatar}" alt="${aUser.nickname}" class="avatar-sm">
+                            <img src="${aUserAvatar}" alt="${aUser.nickname}" class="avatar-sm">
                             <div>
                                 <div class="user-name">${aUser.nickname}</div>
                                 <div class="post-meta">${timeAgo(a.created_at)}</div>
                             </div>
                         </div>
-                         ${a.is_accepted ? '<div class="answer-badge-container"><div class="accepted-badge"><span style="font-size: 1.1em;">✓</span> 선택된 답변</div></div>' : ''}
+                        ${a.is_accepted ? '<div class="answer-badge-container"><div class="accepted-badge"><span style="font-size: 1.1em;">✓</span> 선택된 답변</div></div>' : ''}
                         ${isOwnAnswer ? `
                             <div style="position: relative; margin-left: 0.5rem;">
                                 <button class="answer-menu-btn" onclick="toggleAnswerMenu(${a.id}, event)">▼</button>
@@ -538,31 +522,32 @@ function showQuestionDetail(id) {
                     </div>
                 </div>
                 
-                <div class="answer-body">
-                    ${a.body}
-                    ${a.image ? `<img src="${a.image}" class="uploaded-image" alt="Answer Image">` : ''}
-                </div>
+                <div class="answer-body">${a.body}</div>
                 
                 <div class="answer-actions">
                     <button class="like-btn ${likedClass}" onclick="toggleAnswerLike(${a.id})">
-                        <span class="like-icon">👍</span> 좋아요 ${a.likes}개
+                        <span class="like-icon">👍</span> 좋아요 ${a.like_count || 0}개
                     </button>
-                    ${getAcceptButtonHtml(isQuestionAuthor, a, q)}
+                    ${acceptButtonHtml}
                 </div>
-                </div>
+                ${childAnswersHtml}
             </div>
         `;
     }).join('');
 
-    const answerInputHtml = `
+    const currentUserAvatar = currentUser
+        ? `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.nickname || 'U')}&background=00A1E0&color=fff`
+        : 'https://ui-avatars.com/api/?name=U&background=ccc&color=fff';
+
+    const answerInputHtml = isLoggedIn() ? `
         <div class="answer-input-container expanded" id="answer-input-container-detail">
             <div class="answer-input-header">
-                <img src="${currentUser.avatar}" class="avatar-sm" style="width: 24px; height: 24px;">
+                <img src="${currentUserAvatar}" class="avatar-sm" style="width: 24px; height: 24px;">
                 <span>댓글 추가</span>
             </div>
             <textarea id="new-answer-body-detail" class="answer-textarea" placeholder="댓글을 작성하세요..." style="min-height: 100px;"></textarea>
             <div class="answer-controls">
-                 <label class="file-attachment-ui">
+                <label class="file-attachment-ui">
                     <input type="file" id="file-input-detail" style="display: none;" onchange="handleFileSelect(event, 'detail')">
                     <span>📎 파일첨부 (JPG, PNG)</span>
                     <span id="file-name-detail" class="file-name-display"></span>
@@ -570,15 +555,15 @@ function showQuestionDetail(id) {
             </div>
             <img id="preview-answer-detail" class="preview-image" alt="Image Preview">
             <div class="answer-submit-actions" style="display: flex; justify-content: flex-end; margin-top: 0.5rem;">
-                <button class="btn-primary" onclick="submitAnswer(${q.id}, 'detail')">답글 쓰기</button>
+                <button class="btn-primary" onclick="submitAnswer(${q.id})">답글 쓰기</button>
             </div>
         </div>
-    `;
+    ` : '<div style="padding: 1rem; text-align: center; color: #666;">로그인 후 댓글을 작성할 수 있습니다.</div>';
 
     detailContentEl.innerHTML = `
         <div class="detail-header">
             <div class="user-info">
-                <img src="${user.avatar}" alt="${user.nickname}" class="avatar-sm">
+                <img src="${userAvatar}" alt="${user.nickname}" class="avatar-sm">
                 <div>
                     <div class="user-name">${user.nickname}</div>
                     <div class="post-meta">${timeAgo(q.created_at)}</div>
@@ -587,14 +572,14 @@ function showQuestionDetail(id) {
             <h1 class="detail-title">${q.title}</h1>
             <div class="detail-body">
                 ${q.body}
-                ${q.image ? `<img src="${q.image}" class="uploaded-image" alt="Question Image">` : ''}
+                ${q.attachments && q.attachments.length > 0 ? q.attachments.map(att => `<img src="${att.file_url}" class="uploaded-image" alt="Attachment">`).join('') : ''}
             </div>
             <div class="tags">
-                ${q.tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
-                ${q.has_accepted_answer || q.status === 'Solved' ? `<span class="solved-badge">✓ Solved</span>` : ''}
+                ${tagNames.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                ${q.accepted_answer_id ? `<span class="solved-badge">✓ Solved</span>` : ''}
             </div>
             <div class="feed-stats">
-                <div class="stat-item"><span>👁️</span> ${q.views} Views</div>
+                <div class="stat-item"><span>👁️</span> ${q.views || 0} Views</div>
                 <div class="stat-item"><span>👍</span> ${totalAnswerLikes} Votes</div>
             </div>
         </div>
@@ -605,10 +590,12 @@ function showQuestionDetail(id) {
         </div>
     `;
 
+    // Store current question ID for later use
+    window.currentDetailQuestionId = q.id;
+
     feedListEl.classList.add('hidden');
     feedHeaderEl.classList.add('hidden');
 
-    // Hide Search and Sidebar
     if (searchContainerEl) searchContainerEl.classList.add('hidden');
     if (sidebarRightEl) sidebarRightEl.classList.add('hidden');
     if (mainLayoutEl) mainLayoutEl.classList.add('detail-active');
@@ -617,40 +604,33 @@ function showQuestionDetail(id) {
     window.scrollTo(0, 0);
 }
 
-function hideQuestionDetail() {
+async function hideQuestionDetail() {
     questionDetailEl.classList.add('hidden');
 
-    // Show Search and Sidebar
     if (searchContainerEl) searchContainerEl.classList.remove('hidden');
     if (sidebarRightEl) sidebarRightEl.classList.remove('hidden');
     if (mainLayoutEl) mainLayoutEl.classList.remove('detail-active');
 
     feedListEl.classList.remove('hidden');
     feedHeaderEl.classList.remove('hidden');
-    renderFeed(); // Re-render to show updates
+
+    await fetchQuestions();
+    renderFeed();
 }
 
-// Answer Functions
-function expandAnswerInput(questionId) {
-    const container = document.getElementById(`answer-input-container-${questionId}`);
-    if (container) {
-        container.classList.add('expanded');
-    }
-}
-
+// =====================================================
+// ANSWER FUNCTIONS
+// =====================================================
 function handleFileSelect(event, questionId) {
     const input = event.target;
     const fileNameDisplay = document.getElementById(`file-name-${questionId}`);
-
-    // For answer preview in detail view
     const previewId = questionId === 'detail' ? 'preview-answer-detail' : `preview-answer-${questionId}`;
     const previewImg = document.getElementById(previewId);
 
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        fileNameDisplay.textContent = file.name;
+        if (fileNameDisplay) fileNameDisplay.textContent = file.name;
 
-        // Read file for preview and storage
         const reader = new FileReader();
         reader.onload = (e) => {
             if (previewImg) {
@@ -663,7 +643,7 @@ function handleFileSelect(event, questionId) {
         };
         reader.readAsDataURL(file);
     } else {
-        fileNameDisplay.textContent = '';
+        if (fileNameDisplay) fileNameDisplay.textContent = '';
         if (previewImg) {
             previewImg.classList.remove('show');
             previewImg.src = '';
@@ -672,40 +652,27 @@ function handleFileSelect(event, questionId) {
     }
 }
 
-function submitAnswer(questionId, context = 'feed') {
-    const inputId = context === 'detail' ? 'new-answer-body-detail' : `new-answer-body-${questionId}`;
-    const body = document.getElementById(inputId).value;
-
-    if (!body.trim()) {
-        alert('내용을 입력해주세요.');
+async function submitAnswer(questionId) {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
         return;
     }
 
-    const newAnswer = {
-        id: allAnswers.length + 201,
-        question_id: questionId,
-        user_id: currentUser.id,
-        body: body,
-        image: currentAnswerImage, // Add image data
-        is_accepted: false,
-        likes: 0,
-        likedByMe: false,
-        created_at: new Date().toISOString()
-    };
-
-    // Reset image state
-    currentAnswerImage = null;
-
-    allAnswers.push(newAnswer);
-
-    const q = questions.find(q => q.id === questionId);
-    if (q) q.answer_count++;
-
-    if (context === 'detail') {
-        showQuestionDetail(questionId);
-    } else {
-        renderFeed();
+    const body = document.getElementById('new-answer-body-detail').value;
+    if (!body.trim()) {
+        showError('내용을 입력해주세요.');
+        return;
     }
+
+    const result = await API.answers.create(questionId, { body: body, parent_answer_id: null });
+    if (result.error) {
+        showError(result.message || '답변 등록에 실패했습니다.');
+        return;
+    }
+
+    currentAnswerImage = null;
+    showToast('답변이 등록되었습니다.');
+    showQuestionDetail(questionId);
 }
 
 function toggleAnswerMenu(answerId, event) {
@@ -718,11 +685,11 @@ function toggleAnswerMenu(answerId, event) {
 }
 
 function editAnswer(answerId) {
-    const answer = allAnswers.find(a => a.id === answerId);
-    if (!answer) return;
-
+    // Store for later
     editingAnswerId = answerId;
-    document.getElementById('edit-answer-body').value = answer.body;
+    // We need to get the answer body - for now we'll use a simple approach
+    const answerBody = document.querySelector(`#answer-menu-${answerId}`)?.closest('.answer-item')?.querySelector('.answer-body')?.textContent || '';
+    document.getElementById('edit-answer-body').value = answerBody.trim();
 
     const menu = document.getElementById(`answer-menu-${answerId}`);
     if (menu) menu.classList.remove('show');
@@ -741,99 +708,76 @@ function confirmDeleteAnswer(answerId) {
     if (menu) menu.classList.remove('show');
 }
 
-function deleteAnswer() {
+async function deleteAnswer() {
     if (!answerToDelete) return;
 
-    const idx = allAnswers.findIndex(a => a.id === answerToDelete);
-    if (idx !== -1) {
-        const deletedAnswer = allAnswers[idx];
-        const questionId = deletedAnswer.question_id;
-
-        // If the deleted answer was accepted, reset the question status
-        if (deletedAnswer.is_accepted) {
-            const q = questions.find(q => q.id === questionId);
-            if (q) {
-                q.has_accepted_answer = false;
-                q.status = 'Open';
-            }
-        }
-
-        allAnswers.splice(idx, 1);
-
-        const q = questions.find(q => q.id === questionId);
-        if (q) q.answer_count--;
-
-        if (!questionDetailEl.classList.contains('hidden')) {
-            showQuestionDetail(questionId);
-        }
-        renderFeed();
-        showToast('댓글이 삭제되었습니다');
+    const result = await API.answers.delete(answerToDelete);
+    if (result.error) {
+        showError(result.message || '답변 삭제에 실패했습니다.');
+        return;
     }
 
     document.getElementById('confirm-modal').classList.add('hidden');
+    showToast('댓글이 삭제되었습니다');
+
+    if (window.currentDetailQuestionId) {
+        showQuestionDetail(window.currentDetailQuestionId);
+    }
+
     answerToDelete = null;
 }
 
-function toggleAnswerLike(answerId) {
-    const answer = allAnswers.find(a => a.id === answerId);
-    if (answer) {
-        if (answer.likedByMe) {
-            answer.likes--;
-            answer.likedByMe = false;
-        } else {
-            answer.likes++;
-            answer.likedByMe = true;
-        }
+async function toggleAnswerLike(answerId) {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
+    }
 
-        const qId = answer.question_id;
-        if (!questionDetailEl.classList.contains('hidden')) {
-            showQuestionDetail(qId);
-        } else {
-            renderFeed();
-        }
+    const result = await API.answers.toggleLike(answerId);
+    if (result.error) {
+        showError(result.message || '좋아요 처리에 실패했습니다.');
+        return;
+    }
+
+    // Refresh detail view
+    if (window.currentDetailQuestionId) {
+        showQuestionDetail(window.currentDetailQuestionId);
     }
 }
 
-function acceptAnswer(answerId) {
-    const answer = allAnswers.find(a => a.id === answerId);
-    if (!answer) return;
-
-    const q = questions.find(q => q.id === answer.question_id);
-    if (!q) return;
-
-    if (answer.is_accepted) {
-        // Unselect logic
-        answer.is_accepted = false;
-        q.has_accepted_answer = false;
-        q.status = 'Open';
-    } else {
-        // Reset others if multiple (optional, assuming only one accepted)
-        allAnswers.forEach(a => {
-            if (a.question_id === answer.question_id) a.is_accepted = false;
-        });
-
-        answer.is_accepted = true;
-        q.has_accepted_answer = true;
-        q.status = 'Solved'; // Mark as solved
+async function acceptAnswer(questionId, answerId) {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
     }
 
-    if (!questionDetailEl.classList.contains('hidden')) {
-        showQuestionDetail(answer.question_id);
-    } else {
-        renderFeed();
+    const result = await API.questions.acceptAnswer(questionId, answerId);
+    if (result.error) {
+        showError(result.message || '채택 처리에 실패했습니다.');
+        return;
     }
+
+    showToast(result.message || '답변이 채택되었습니다.');
+    showQuestionDetail(questionId);
 }
 
-// Feed Action Functions
-function toggleFavorite(questionId) {
-    const question = questions.find(q => q.id === questionId);
-    if (question) {
-        question.favorited = !question.favorited;
-        renderFeed();
-        if (currentFilter === 'bookmarks' && !question.favorited) {
-            renderFeed();
-        }
+// =====================================================
+// QUESTION FUNCTIONS
+// =====================================================
+async function toggleFavorite(questionId) {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
     }
+
+    const result = await API.questions.toggleBookmark(questionId);
+    if (result.error) {
+        showError(result.message || '북마크 처리에 실패했습니다.');
+        return;
+    }
+
+    await fetchQuestions();
+    renderFeed();
 }
 
 function togglePostMenu(questionId, event) {
@@ -845,21 +789,26 @@ function togglePostMenu(questionId, event) {
     menu.classList.toggle('show');
 }
 
-function editQuestion(questionId) {
-    const question = questions.find(q => q.id === questionId);
-    if (!question) return;
+async function editQuestion(questionId) {
+    // Fetch question detail for editing
+    const result = await API.questions.getDetail(questionId);
+    if (result.error) {
+        showError(result.message || '질문을 찾을 수 없습니다.');
+        return;
+    }
+
+    const question = result;
     editingQuestionId = questionId;
     document.getElementById('q-title').value = question.title;
     document.getElementById('q-body').value = question.body;
 
     // Populate selected roles
-    selectedRoles = [...question.tags];
+    selectedRoles = (question.tag_ids || []).map(id => getTagName(id));
     renderRoleBadges();
 
     const menu = document.getElementById(`menu-${questionId}`);
     if (menu) menu.classList.remove('show');
     openModal();
-    // Re-check validity after populating values
     checkFormValidity();
 }
 
@@ -873,16 +822,23 @@ function confirmDelete(questionId) {
     if (menu) menu.classList.remove('show');
 }
 
-function deleteQuestion() {
+async function deleteQuestion() {
     if (!questionToDelete) return;
-    const idx = questions.findIndex(q => q.id === questionToDelete);
-    if (idx !== -1) {
-        questions.splice(idx, 1);
-        renderFeed();
-        renderRecommendedTopics();
-        showToast('질문이 삭제되었습니다');
+
+    const result = await API.questions.delete(questionToDelete);
+    if (result.error) {
+        showError(result.message || '질문 삭제에 실패했습니다.');
+        return;
     }
+
     document.getElementById('confirm-modal').classList.add('hidden');
+    showToast('질문이 삭제되었습니다');
+
+    await fetchQuestions();
+    renderFeed();
+    await fetchTags();
+    renderRecommendedTopics();
+
     questionToDelete = null;
 }
 
@@ -892,20 +848,12 @@ function cancelDelete() {
     answerToDelete = null;
 }
 
-function showToast(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    toast.innerHTML = `<span>✓</span> ${message}`;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('fade-out');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// Role Badge Logic
+// =====================================================
+// ROLE BADGE LOGIC
+// =====================================================
 function renderRoleBadges() {
     const container = document.getElementById('selected-roles-container');
+    if (!container) return;
     container.innerHTML = '';
     selectedRoles.forEach(role => {
         const badge = document.createElement('span');
@@ -919,50 +867,31 @@ function renderRoleBadges() {
     });
 }
 
-// Event Listeners
-backToFeedBtn.addEventListener('click', hideQuestionDetail);
-
-filterLinks.forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        filterLinks.forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        currentFilter = link.dataset.filter;
-        currentTagFilter = null;
-        renderFeed();
-        renderRecommendedTopics();
-        hideQuestionDetail();
-    });
-});
-
-sortSelect.addEventListener('change', (e) => {
-    currentSort = e.target.value;
-    renderFeed();
-});
-
+// =====================================================
+// MODAL FUNCTIONS
+// =====================================================
 function openModal() {
     modal.classList.remove('hidden');
     const modalTitle = modal.querySelector('h2');
     const postBtn = modal.querySelector('button[type="submit"]');
     if (editingQuestionId) {
-        modalTitle.textContent = 'Edit Question'; // Changed to English for consistency
-        postBtn.textContent = 'Update'; // Changed to English for consistency
+        modalTitle.textContent = 'Edit Question';
+        postBtn.textContent = 'Update';
     } else {
         modalTitle.textContent = 'Ask a Question';
         postBtn.textContent = 'Post Question';
-        selectedRoles = []; // Reset roles for new question
+        selectedRoles = [];
         renderRoleBadges();
 
-        // Reset file input
         if (qFileInput) qFileInput.value = '';
         if (qFileNameDisplay) qFileNameDisplay.textContent = '';
-        currentQuestionImage = null; // Reset image
+        currentQuestionImage = null;
+        currentQuestionFiles = [];
         if (qPreviewImg) {
             qPreviewImg.classList.remove('show');
             qPreviewImg.src = '';
         }
 
-        // Check validity (will disable button since fields are empty)
         checkFormValidity();
     }
 }
@@ -972,19 +901,10 @@ function closeModal() {
     questionForm.reset();
     editingQuestionId = null;
     selectedRoles = [];
+    currentQuestionFiles = [];
     renderRoleBadges();
 }
 
-askBtn.addEventListener('click', () => {
-    editingQuestionId = null; // Ensure we are in create mode
-    document.getElementById('q-title').value = '';
-    document.getElementById('q-body').value = '';
-    openModal();
-});
-closeModalBtn.addEventListener('click', closeModal);
-cancelModalBtn.addEventListener('click', closeModal);
-
-// Question Form Validation & File Handler
 function checkFormValidity() {
     const title = qTitleInput.value.trim();
     const body = qBodyInput.value.trim();
@@ -995,6 +915,121 @@ function checkFormValidity() {
     }
 }
 
+// =====================================================
+// HEADER PROFILE
+// =====================================================
+function renderHeaderProfile() {
+    if (isLoggedIn() && currentUser) {
+        const displayNickname = currentUser.nickname || 'User';
+        const displayEmail = currentUser.email || '';
+        const displayCohort = currentUser.crm_generation || '';
+        const displayDepartment = currentUser.department || '';
+
+        const cohortAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayCohort || displayNickname)}&background=00A1E0&color=fff&length=2`;
+
+        userProfileContainer.innerHTML = `
+            <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar" id="header-avatar">
+            <div class="profile-dropdown" id="profile-dropdown">
+                <div class="dropdown-header">
+                    <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar-large">
+                    <div class="dropdown-user-name">${displayNickname}</div>
+                    <div class="dropdown-user-meta" style="font-size: 0.85rem; color: #666; margin-top: 4px;">
+                        ${displayEmail}<br>
+                        ${displayDepartment}
+                    </div>
+                </div>
+                <div class="dropdown-actions">
+                    <a href="#" class="dropdown-item logout" id="logout-btn">Logout</a>
+                </div>
+            </div>
+        `;
+
+        const avatarBtn = document.getElementById('header-avatar');
+        const dropdown = document.getElementById('profile-dropdown');
+
+        avatarBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await logout();
+        });
+    } else {
+        userProfileContainer.innerHTML = `
+            <button class="login-btn" id="login-btn">Log In</button>
+        `;
+
+        document.getElementById('login-btn').addEventListener('click', () => {
+            window.location.href = 'login.html';
+        });
+    }
+}
+
+async function logout() {
+    await API.auth.logout();
+    localStorage.removeItem('userData');
+    localStorage.removeItem('isLoggedIn');
+    currentUser = null;
+    renderHeaderProfile();
+    currentFilter = 'all';
+    filterLinks.forEach(l => l.classList.remove('active'));
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    await fetchQuestions();
+    renderFeed();
+}
+
+// =====================================================
+// EVENT LISTENERS
+// =====================================================
+backToFeedBtn.addEventListener('click', hideQuestionDetail);
+
+filterLinks.forEach(link => {
+    link.addEventListener('click', async (e) => {
+        e.preventDefault();
+
+        // Check if login required
+        const filter = link.dataset.filter;
+        if (['my-questions', 'my-answers', 'bookmarks'].includes(filter) && !isLoggedIn()) {
+            showError('로그인이 필요합니다.');
+            return;
+        }
+
+        filterLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        currentFilter = filter;
+        currentTagFilter = null;
+        currentPage = 1;
+
+        await fetchQuestions();
+        renderFeed();
+        renderRecommendedTopics();
+        hideQuestionDetail();
+    });
+});
+
+sortSelect.addEventListener('change', async (e) => {
+    currentSort = e.target.value;
+    currentPage = 1;
+    await fetchQuestions();
+    renderFeed();
+});
+
+askBtn.addEventListener('click', () => {
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
+    }
+    editingQuestionId = null;
+    document.getElementById('q-title').value = '';
+    document.getElementById('q-body').value = '';
+    openModal();
+});
+
+closeModalBtn.addEventListener('click', closeModal);
+cancelModalBtn.addEventListener('click', closeModal);
+
 if (qTitleInput) qTitleInput.addEventListener('input', checkFormValidity);
 if (qBodyInput) qBodyInput.addEventListener('input', checkFormValidity);
 
@@ -1003,8 +1038,8 @@ if (qFileInput) {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
             qFileNameDisplay.textContent = file.name;
+            currentQuestionFiles = [file];
 
-            // Preview
             const reader = new FileReader();
             reader.onload = (e) => {
                 if (qPreviewImg) {
@@ -1021,6 +1056,7 @@ if (qFileInput) {
                 qPreviewImg.src = '';
             }
             currentQuestionImage = null;
+            currentQuestionFiles = [];
         }
     });
 }
@@ -1034,7 +1070,7 @@ if (roleSelect) {
             selectedRoles.push(selectedValue);
             renderRoleBadges();
         }
-        e.target.value = ""; // Reset dropdown
+        e.target.value = "";
     });
 }
 
@@ -1044,20 +1080,22 @@ const searchInput = document.getElementById('search-input');
 const searchScopeSelect = document.getElementById('search-scope');
 
 if (searchBtn) {
-    searchBtn.addEventListener('click', () => {
+    searchBtn.addEventListener('click', async () => {
         searchQuery = searchInput.value;
         searchScope = searchScopeSelect.value;
         currentPage = 1;
+        await fetchQuestions();
         renderFeed();
     });
 }
 
 if (searchInput) {
-    searchInput.addEventListener('keypress', (e) => {
+    searchInput.addEventListener('keypress', async (e) => {
         if (e.key === 'Enter') {
             searchQuery = searchInput.value;
             searchScope = searchScopeSelect.value;
             currentPage = 1;
+            await fetchQuestions();
             renderFeed();
         }
     });
@@ -1067,20 +1105,21 @@ if (searchInput) {
 closeAnswerEditBtn.addEventListener('click', () => answerEditModal.classList.add('hidden'));
 cancelAnswerEditBtn.addEventListener('click', () => answerEditModal.classList.add('hidden'));
 
-answerEditForm.addEventListener('submit', (e) => {
+answerEditForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (editingAnswerId) {
-        const answer = allAnswers.find(a => a.id === editingAnswerId);
-        if (answer) {
-            answer.body = document.getElementById('edit-answer-body').value;
-            if (!questionDetailEl.classList.contains('hidden')) {
-                showQuestionDetail(answer.question_id);
-            } else {
-                renderFeed();
-            }
-            answerEditModal.classList.add('hidden');
-            editingAnswerId = null;
+        const body = document.getElementById('edit-answer-body').value;
+        const result = await API.answers.update(editingAnswerId, { body });
+        if (result.error) {
+            showError(result.message || '답변 수정에 실패했습니다.');
+            return;
         }
+        answerEditModal.classList.add('hidden');
+        showToast('답변이 수정되었습니다.');
+        if (window.currentDetailQuestionId) {
+            showQuestionDetail(window.currentDetailQuestionId);
+        }
+        editingAnswerId = null;
     }
 });
 
@@ -1089,36 +1128,51 @@ window.addEventListener('click', (e) => {
     if (e.target === answerEditModal) answerEditModal.classList.add('hidden');
 });
 
-questionForm.addEventListener('submit', (e) => {
+questionForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (!isLoggedIn()) {
+        showError('로그인이 필요합니다.');
+        return;
+    }
+
     const title = document.getElementById('q-title').value;
     const body = document.getElementById('q-body').value;
 
+    // Get tag IDs from selected role names
+    const tagIds = selectedRoles.map(roleName => {
+        const tag = tagsData.find(t => t.name === roleName);
+        return tag ? tag.id : null;
+    }).filter(id => id !== null);
+
     if (editingQuestionId) {
-        const q = questions.find(q => q.id === editingQuestionId);
-        if (q) {
-            q.title = title;
-            q.body = body;
-            q.tags = selectedRoles;
+        const result = await API.questions.update(editingQuestionId, {
+            title,
+            body,
+            tag_ids: tagIds
+        });
+        if (result.error) {
+            showError(result.message || '질문 수정에 실패했습니다.');
+            return;
         }
+        showToast('질문이 수정되었습니다.');
     } else {
-        const newQuestion = {
-            id: questions.length + 101,
-            user_id: currentUser.id,
-            title: title,
-            body: body,
-            image: currentQuestionImage, // Add image
-            status: "Open",
-            views: 0,
-            votes: 0,
-            answer_count: 0,
-            created_at: new Date().toISOString(),
-            tags: selectedRoles,
-            favorited: false
-        };
-        questions.unshift(newQuestion);
+        const result = await API.questions.create({
+            title,
+            body,
+            tag_ids: tagIds,
+            files: currentQuestionFiles
+        });
+        if (result.error) {
+            showError(result.message || '질문 등록에 실패했습니다.');
+            return;
+        }
+        showToast('질문이 등록되었습니다.');
     }
+
+    await fetchQuestions();
     renderFeed();
+    await fetchTags();
     renderRecommendedTopics();
     closeModal();
 });
@@ -1137,89 +1191,6 @@ confirmModal.addEventListener('click', e => {
     if (e.target === confirmModal) cancelDelete();
 });
 
-// Init
-renderFeed();
-renderLeaderboard();
-renderRecommendedTopics();
-
-// Login/Logout Functionality
-const userProfileContainer = document.getElementById('user-profile-container');
-let isLoggedIn = true;
-
-function renderHeaderProfile() {
-    if (isLoggedIn) {
-        // Get stored user data if available
-        const storedUserDataStr = localStorage.getItem('userData');
-        let displayNickname = currentUser.nickname;
-        let displayEmail = 'user@example.com';
-        let displayCohort = '1기';
-        let displayAffiliation = 'Trailblazer Community';
-
-        if (storedUserDataStr) {
-            const userData = JSON.parse(storedUserDataStr);
-            if (userData.nickname) displayNickname = userData.nickname;
-            if (userData.email) displayEmail = userData.email;
-            if (userData.crmCohort) displayCohort = userData.crmCohort;
-            if (userData.affiliation) displayAffiliation = userData.affiliation;
-        }
-
-        // Create avatar with cohort text
-        const cohortAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayCohort)}&background=00A1E0&color=fff&length=2`;
-
-        userProfileContainer.innerHTML = `
-            <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar" id="header-avatar">
-            <div class="profile-dropdown" id="profile-dropdown">
-                <div class="dropdown-header">
-                    <img src="${cohortAvatarUrl}" alt="${displayNickname}" class="avatar-large">
-                    <div class="dropdown-user-name">${displayNickname}</div>
-                    <div class="dropdown-user-meta" style="font-size: 0.85rem; color: #666; margin-top: 4px;">
-                        ${displayEmail}<br>
-                        ${displayAffiliation}
-                    </div>
-                </div>
-                <div class="dropdown-actions">
-                    <a href="#" class="dropdown-item logout" id="logout-btn">Logout</a>
-                </div>
-            </div>
-        `;
-
-        const avatarBtn = document.getElementById('header-avatar');
-        const dropdown = document.getElementById('profile-dropdown');
-
-        avatarBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('show');
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', (e) => {
-            e.preventDefault();
-            logout();
-        });
-    } else {
-        userProfileContainer.innerHTML = `
-            <button class="login-btn" id="login-btn">Log In</button>
-        `;
-
-        document.getElementById('login-btn').addEventListener('click', login);
-    }
-}
-
-function login() {
-    isLoggedIn = true;
-    renderHeaderProfile();
-}
-
-function logout() {
-    isLoggedIn = false;
-    renderHeaderProfile();
-    if (currentFilter === 'my-questions') {
-        currentFilter = 'all';
-        filterLinks.forEach(l => l.classList.remove('active'));
-        document.querySelector('[data-filter="all"]').classList.add('active');
-        renderFeed();
-    }
-}
-
 document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('profile-dropdown');
     if (dropdown && dropdown.classList.contains('show') && !e.target.closest('.user-profile')) {
@@ -1227,27 +1198,51 @@ document.addEventListener('click', (e) => {
     }
 });
 
-renderHeaderProfile();
-
 // Logo Click Handler
 const logoEl = document.querySelector('.logo');
 if (logoEl) {
     logoEl.style.cursor = 'pointer';
-    logoEl.addEventListener('click', () => {
+    logoEl.addEventListener('click', async () => {
         currentFilter = 'all';
         currentTagFilter = null;
         searchQuery = '';
         searchScope = 'content';
         currentPage = 1;
 
-        // Reset UI states
         filterLinks.forEach(l => l.classList.remove('active'));
         document.querySelector('[data-filter="all"]').classList.add('active');
         if (searchInput) searchInput.value = '';
         if (searchScopeSelect) searchScopeSelect.value = 'content';
 
         hideQuestionDetail();
+        await fetchQuestions();
         renderFeed();
         renderRecommendedTopics();
     });
 }
+
+// =====================================================
+// INITIALIZATION
+// =====================================================
+async function init() {
+    // Fetch user profile if logged in
+    await fetchCurrentUser();
+    renderHeaderProfile();
+
+    // Fetch tags
+    await fetchTags();
+
+    // Fetch questions
+    await fetchQuestions();
+    renderFeed();
+
+    // Fetch leaderboard
+    await fetchLeaderboard();
+    renderLeaderboard();
+
+    // Render topics
+    renderRecommendedTopics();
+}
+
+// Run initialization
+init();
